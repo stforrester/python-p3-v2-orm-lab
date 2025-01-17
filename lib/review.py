@@ -19,6 +19,39 @@ class Review:
             f"<Review {self.id}: {self.year}, {self.summary}, "
             + f"Employee: {self.employee_id}>"
         )
+    
+    @property
+    def year(self):
+        return self._year
+    
+    @year.setter
+    def year(self, year):
+        if isinstance(year, int) and year >= 2000:
+            self._year = year
+        else:
+            raise ValueError("Year must be an integer greater than or equal to 2000")
+
+    @property
+    def summary(self):
+        return self._summary
+    
+    @summary.setter
+    def summary(self, summary):
+        if isinstance(summary, str) and summary:
+            self._summary = summary
+        else:
+            raise ValueError("Summary must be a non-empty string")
+    
+    @property
+    def employee_id(self):
+        return self._employee_id
+    
+    @employee_id.setter
+    def employee_id(self, employee_id):
+        if type(employee_id) is int and Employee.find_by_id(employee_id):
+            self._employee_id = employee_id
+        else:
+            raise ValueError("Employee Id must refereance an employee in the database")
 
     @classmethod
     def create_table(cls):
@@ -88,19 +121,54 @@ class Review:
     @classmethod
     def find_by_id(cls, id):
         """Return a Review instance having the attribute values from the table row."""
-        pass
+        sql = """
+            SELECT *
+            FROM reviews
+            WHERE id = ?
+        """
+
+        row = CURSOR.execute(sql, (id,)).fetchone()
+        return cls.instance_from_db(row) if row else None
+
 
     def update(self):
         """Update the table row corresponding to the current Review instance."""
-        pass
+        sql = """
+            UPDATE reviews
+            SET year = ?, summary = ?, employee_id = ?
+            WHERE id = ?
+        """
+        CURSOR.execute(sql, (self.year, self.summary, self.employee_id, self.id))
+        CONN.commit()
 
     def delete(self):
         """Delete the table row corresponding to the current Review instance,
         delete the dictionary entry, and reassign id attribute"""
-        pass
+        
+        sql = """
+            DELETE FROM reviews
+            WHERE id = ?
+        """
+
+        CURSOR.execute(sql, (self.id,))
+        CONN.commit()
+
+        # Delete the dictionary entry using id as the key
+        del type(self).all[self.id]
+
+        # Set the id to None
+        self.id = None
 
     @classmethod
     def get_all(cls):
         """Return a list containing one Review instance per table row"""
-        pass
+        
+        sql = """
+            SELECT *
+            FROM reviews
+        """
+
+        rows = CURSOR.execute(sql).fetchall()
+
+        return [cls.instance_from_db(row) for row in rows]
 
